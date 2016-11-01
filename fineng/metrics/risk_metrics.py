@@ -1,24 +1,5 @@
-import Quandl
-from talib.abstract import *
-import matplotlib.pyplot as plt
-import pandas as pd
-from scipy import poly1d
 import numpy as np
 from pykalman import KalmanFilter
-
-
-# asset = Quandl.get('GOOG/', transform='rdiff')
-# benchmark = Quandl.get('GOOG/NYSE_SPY.4', transform='rdiff')
-#
-# start = '2013-10-30'
-# end = '2016-10-30'
-# vix = Quandl.get("CBOE/VIX")
-# spy = Quandl.get("YAHOO/INDEX_SPY")
-# vix = vix.loc[(vix.index>'2010-01-01') & (vix.index<'2011-01-01'), ['VIX Close']]
-# spy = spy.loc[(spy.index>'2010-01-01') & (spy.index<'2011-01-01'), ['Adjusted Close']]
-# vix_r = vix.pct_change()[1:]
-# spy_r = spy.pct_change()[1:]
-#
 
 
 class RiskMetrics(object):
