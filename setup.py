@@ -8,5 +8,5 @@ setup(name='fineng',
       author='DrG',
       author_email='guillaume@stratifi.com',
       url='https://github.com/StratiFi/fineng/',
-      packages=['metrics'],
+      packages=['fineng'],
      )
