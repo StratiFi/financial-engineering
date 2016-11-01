@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/financial-engineering.iml" filepath="$PROJECT_DIR$/.idea/financial-engineering.iml" />
+      <module fileurl="file://$USER_HOME$/Workspace/gitted/fineng/.idea/financial-engineering.iml" filepath="$USER_HOME$/Workspace/gitted/fineng/.idea/financial-engineering.iml" />
     </modules>
   </component>
 </project>
