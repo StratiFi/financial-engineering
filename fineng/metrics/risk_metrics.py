@@ -91,7 +91,7 @@ class RiskMetrics(object):
         alpha = np.zeros(len(asset_returns))
         for enum_i, elem in enumerate(asset_returns):
             lookback = min(lookback_days, enum_i)
-            print '==> ', enum_i, len(asset_returns), len(beta)
+            # print '==> ', enum_i, len(asset_returns), len(beta)
             beta[enum_i], alpha[enum_i] = np.polyfit(benchmark_returns[enum_i - lookback:enum_i + 1],
                                                      asset_returns[enum_i - lookback:enum_i + 1], 1)
 
