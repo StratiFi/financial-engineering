@@ -4,18 +4,43 @@ from pykalman import KalmanFilter
 
 class RiskMetrics(object):
     def __init__(self):
-        self.alpha_betas = None
-        pass
+        self.alpha_betas_kalman = None
+        self.alpha_betas_lstsq = None
+        self._alphas = None
+        self._betas = None
+        self.time_indices = None
 
-    def get_latest_alpha_beta(self, asset_returns, benchmark_returns):
-        if not self.alpha_betas:
-            self.build_batch_kalman_estimates(asset_returns, benchmark_returns)
-        alpha, beta = self.alpha_betas[-1]
+    def get_beta_time_series_kalman(self):
+        self._betas = [x[0] for x in self.alpha_betas_kalman]
+        return self._betas
+
+    def get_alpha_time_series_kalman(self):
+        self._alphas = [x[1] for x in self.alpha_betas_kalman]
+        return self._alphas
+
+    def get_beta_time_series_lstsq(self):
+        self._betas = [x[1] for x in self.alpha_betas_lstsq]
+        return self._betas
+
+    def get_alpha_time_series_lstsq(self):
+        self._alphas = [x[0] for x in self.alpha_betas_lstsq]
+        return self._alphas
+
+    def get_latest_alpha_beta_lstsq(self, asset_returns, benchmark_returns, lookback_days=90):
+        if not self.alpha_betas_lstsq:
+            self.build_batch_lstsq_estimates(asset_returns, benchmark_returns, lookback_days)
+        alpha, beta = self.alpha_betas_lstsq[-1]
         return alpha, beta
 
-    def build_batch_kalman_estimates(self, asset_returns, benchmark_returns):
+    def get_latest_alpha_beta_kalman(self, asset_returns, benchmark_returns, trans_cov_r=8.e-3):
+        if not self.alpha_betas_kalman:
+            self.build_batch_kalman_estimates(asset_returns, benchmark_returns, trans_cov_r)
+        alpha, beta = self.alpha_betas_kalman[-1]
+        return alpha, beta
+
+    def build_batch_kalman_estimates(self, asset_returns, benchmark_returns, trans_cov_r, time_indices=None):
         if not len(asset_returns) == len(benchmark_returns):
-            raise ('*WTF*')
+            raise '*WTF*'
 
         #
         # # Plot data and use colormap to indicate the date each point corresponds to
@@ -28,44 +53,50 @@ class RiskMetrics(object):
         # plt.ylabel('VIX daily return')
 
         # Run Kalman filter on returns data
-        delta_r = 5e-3
+        delta_r = trans_cov_r
         trans_cov_r = delta_r / (1 - delta_r) * np.eye(2)  # How much random walk wiggles
-        list_spy_r = list(benchmark_returns['Adjusted Close'])
-        list_vix_r = list(asset_returns['VIX Close'])
+        # list_spy_r = list(benchmark_returns['Adjusted Close'])
+        # list_vix_r = list(asset_returns['VIX Close'])
 
-        obs_mat_r = np.expand_dims(np.vstack([[list_spy_r], [np.ones(len(benchmark_returns))]]).T, axis=1)
+        obs_mat_r = np.expand_dims(np.vstack([[benchmark_returns], [np.ones(len(benchmark_returns))]]).T, axis=1)
+
+        initial_state_mean = [0, 0]
+
+        # if we have enough statistics we want to set the initial values using some LLS estimate
+        len_r = len(benchmark_returns)
+        if len_r >= 20:
+            initial_state_mean[0], initial_state_mean[1] = np.polyfit(benchmark_returns[0:min(len_r, 50)],
+                                                 asset_returns[0:min(len_r, 50)], 1)
 
         kf_r = KalmanFilter(n_dim_obs=1, n_dim_state=2,  # y_r is 1-dimensional, (alpha, beta) is 2-dimensional
-                            initial_state_mean=[0, 0],
-                            initial_state_covariance=np.ones((2, 2)),
+                            initial_state_mean=initial_state_mean,
+                            initial_state_covariance=2. * np.ones((2, 2)),
                             transition_matrices=np.eye(2),
                             observation_matrices=obs_mat_r,
                             observation_covariance=.01,
                             transition_covariance=trans_cov_r)
 
-        state_means_r, _ = kf_r.filter(asset_returns.values)
-        self.alpha_betas = state_means_r
+        if time_indices is not None:
+            self.time_indices = time_indices
 
-        # # Plot data and use colormap to indicate the date each point corresponds to
-        # cm = plt.get_cmap('jet')
-        # colors = np.linspace(0.1, 1, len(spy_r))
-        # sc = plt.scatter(spy_r, vix_r, s=30, c=colors, cmap=cm, edgecolor='k', alpha=0.7)
-        # cb = plt.colorbar(sc)
-        # cb.ax.set_yticklabels([str(p.date()) for p in spy_r[::len(spy_r)//9].index])
-        # plt.xlabel('SPY daily return')
-        # plt.ylabel('VIX daily return')
+        state_means_r, _ = kf_r.filter(asset_returns)
+        self.alpha_betas_kalman = state_means_r
 
+    def build_batch_lstsq_estimates(self, asset_returns, benchmark_returns, lookback_days=90):
+        if not len(asset_returns) == len(benchmark_returns):
+            raise '*WTF*'
 
-        # Plot every fifth line
-        # step = 20
-        # xi = np.linspace(-0.5, 0.5, 5)
-        # colors_l= np.linspace(0.1, 1, len(state_means_r[::step]))
-        # for i, beta in enumerate(state_means_r[::step]):
-        #     plt.plot(xi, beta[0] * xi + beta[1], alpha=.2, lw=1, c=cm(colors_l[i]))
-        #
-        # plt.axis([-0.05,0.05,-0.3, 0.3])
-        #
-        # # Plot the OLS regression line
-        # alpha = np.polyfit(list_spy_r, list_vix_r, 1)[0]
-        # beta = np.polyfit(list_spy_r, list_vix_r, 1)[1]
-        # plt.plot(xi, poly1d((alpha, beta))(xi), '0.4')
+        # Run Kalman filter on returns data
+        beta = np.zeros(len(asset_returns))
+        alpha = np.zeros(len(asset_returns))
+        for enum_i, elem in enumerate(asset_returns):
+            lookback = min(lookback_days, enum_i)
+            print '==> ', enum_i, len(asset_returns), len(beta)
+            beta[enum_i], alpha[enum_i] = np.polyfit(benchmark_returns[enum_i - lookback:enum_i + 1],
+                                                     asset_returns[enum_i - lookback:enum_i + 1], 1)
+
+        # don't wanna do a line fit for less than 3 points, really
+        beta[0], alpha[0] = 0, 0
+        beta[1], alpha[1] = 0, 0
+
+        self.alpha_betas_lstsq = np.array(zip(alpha, beta))
