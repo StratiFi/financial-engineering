@@ -33,7 +33,7 @@ class RiskMetrics(object):
 
     def get_latest_alpha_beta_lstsq(self, asset_returns, benchmark_returns):
         if not self.alpha_betas_lstsq:
-            self.build_batch_lstsq_estimates(asset_returns, benchmark_returns, self.lookback)
+            self.build_batch_lstsq_estimates(asset_returns, benchmark_returns)
         alpha, beta = self.alpha_betas_lstsq[-1]
         return alpha, beta
 
