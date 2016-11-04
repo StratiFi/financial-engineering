@@ -37,7 +37,7 @@ class RiskMetrics(object):
         alpha, beta = self.alpha_betas_lstsq[-1]
         return alpha, beta
 
-    def get_latest_alpha_beta_kalman(self, asset_returns, benchmark_returns, trans_cov_r=9.e-3):
+    def get_latest_alpha_beta_kalman(self, asset_returns, benchmark_returns, trans_cov_r=1.e-2):
         if not self.alpha_betas_kalman:
             self.build_batch_kalman_estimates(asset_returns, benchmark_returns, trans_cov_r)
         alpha, beta = self.alpha_betas_kalman[-1]
@@ -79,7 +79,7 @@ class RiskMetrics(object):
                             initial_state_covariance=2. * np.ones((2, 2)),
                             transition_matrices=np.eye(2),
                             observation_matrices=obs_mat_r,
-                            observation_covariance=.01,
+                            observation_covariance=.005,
                             transition_covariance=trans_cov_r)
 
         if time_indices is not None:
