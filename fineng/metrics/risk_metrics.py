@@ -13,7 +13,7 @@ class RiskMetrics(object):
         if self.period == 'D':
             self.lookback = 63
         else:
-            self.lookback = 24
+            self.lookback = 36
 
     def get_beta_time_series_kalman(self):
         self._betas = [x[0] for x in self.alpha_betas_kalman]
