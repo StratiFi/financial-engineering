@@ -69,9 +69,9 @@ class RiskMetrics(object):
 
         # if we have enough statistics we want to set the initial values using some LLS estimate
         len_r = len(benchmark_returns)
-        if len_r >= 20:
-            initial_state_mean[0], initial_state_mean[1] = np.polyfit(benchmark_returns[0:min(len_r, 50)],
-                                                 asset_returns[0:min(len_r, 50)], 1)
+        if len_r >= 15:
+            initial_state_mean[0], initial_state_mean[1] = np.polyfit(benchmark_returns[0:min(len_r, 30)],
+                                                 asset_returns[0:min(len_r, 30)], 1)
 
         # See Chap. 3 of Sarkka, using same conventions
         kf_r = KalmanFilter(n_dim_obs=1, n_dim_state=2,  # y_r is 1-dimensional, (alpha, beta) is 2-dimensional
