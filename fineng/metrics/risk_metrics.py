@@ -3,12 +3,17 @@ from pykalman import KalmanFilter
 
 
 class RiskMetrics(object):
-    def __init__(self):
+    def __init__(self, period='D'):
         self.alpha_betas_kalman = None
         self.alpha_betas_lstsq = None
         self._alphas = None
         self._betas = None
         self.time_indices = None
+        self.period = period
+        if self.period == 'D':
+            self.lookback = 63
+        else:
+            self.lookback = 24
 
     def get_beta_time_series_kalman(self):
         self._betas = [x[0] for x in self.alpha_betas_kalman]
@@ -26,13 +31,13 @@ class RiskMetrics(object):
         self._alphas = [x[0] for x in self.alpha_betas_lstsq]
         return self._alphas
 
-    def get_latest_alpha_beta_lstsq(self, asset_returns, benchmark_returns, lookback_days=90):
+    def get_latest_alpha_beta_lstsq(self, asset_returns, benchmark_returns):
         if not self.alpha_betas_lstsq:
-            self.build_batch_lstsq_estimates(asset_returns, benchmark_returns, lookback_days)
+            self.build_batch_lstsq_estimates(asset_returns, benchmark_returns, self.lookback)
         alpha, beta = self.alpha_betas_lstsq[-1]
         return alpha, beta
 
-    def get_latest_alpha_beta_kalman(self, asset_returns, benchmark_returns, trans_cov_r=8.e-3):
+    def get_latest_alpha_beta_kalman(self, asset_returns, benchmark_returns, trans_cov_r=9.e-3):
         if not self.alpha_betas_kalman:
             self.build_batch_kalman_estimates(asset_returns, benchmark_returns, trans_cov_r)
         alpha, beta = self.alpha_betas_kalman[-1]
@@ -83,7 +88,7 @@ class RiskMetrics(object):
         state_means_r, _ = kf_r.filter(asset_returns)
         self.alpha_betas_kalman = state_means_r
 
-    def build_batch_lstsq_estimates(self, asset_returns, benchmark_returns, lookback_days=90):
+    def build_batch_lstsq_estimates(self, asset_returns, benchmark_returns):
         if not len(asset_returns) == len(benchmark_returns):
             raise '*WTF*'
 
@@ -91,7 +96,7 @@ class RiskMetrics(object):
         beta = np.zeros(len(asset_returns))
         alpha = np.zeros(len(asset_returns))
         for enum_i, elem in enumerate(asset_returns):
-            lookback = min(lookback_days, enum_i)
+            lookback = min(self.lookback, enum_i)
             # print '==> ', enum_i, len(asset_returns), len(beta)
             beta[enum_i], alpha[enum_i] = np.polyfit(benchmark_returns[enum_i - lookback:enum_i + 1],
                                                      asset_returns[enum_i - lookback:enum_i + 1], 1)
