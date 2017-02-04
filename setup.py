@@ -10,4 +10,5 @@ setup(name='financial-engineering',
       author_email='guillaume@stratifi.com',
       url='https://github.com/StratiFi/financial-engineering/',
       packages=['fineng','fineng/metrics'],
+      install_requires=['pykalman'],
      )
