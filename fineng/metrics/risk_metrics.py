@@ -10,10 +10,7 @@ class RiskMetrics(object):
         self._betas = None
         self.time_indices = None
         self.period = period
-        if self.period == 'D':
-            self.lookback = 63
-        else:
-            self.lookback = 36
+        self.lookback = 63 if self.period == 'D' else 36
 
     def get_beta_time_series_kalman(self):
         self._betas = [x[0] for x in self.alpha_betas_kalman]
@@ -44,7 +41,7 @@ class RiskMetrics(object):
         return alpha, beta
 
     def build_batch_kalman_estimates(self, asset_returns, benchmark_returns, trans_cov_r, time_indices=None):
-        if not len(asset_returns) == len(benchmark_returns):
+        if len(asset_returns) != len(benchmark_returns):
             raise '*WTF*'
 
         #
@@ -70,8 +67,12 @@ class RiskMetrics(object):
         # if we have enough statistics we want to set the initial values using some LLS estimate
         len_r = len(benchmark_returns)
         if len_r >= 15:
-            initial_state_mean[0], initial_state_mean[1] = np.polyfit(benchmark_returns[0:min(len_r, 30)],
-                                                 asset_returns[0:min(len_r, 30)], 1)
+            initial_state_mean[0], initial_state_mean[1] = np.polyfit(
+                benchmark_returns[: min(len_r, 30)],
+                asset_returns[: min(len_r, 30)],
+                1,
+            )
+
 
         # See Chap. 3 of Sarkka, using same conventions
         kf_r = KalmanFilter(n_dim_obs=1, n_dim_state=2,  # y_r is 1-dimensional, (alpha, beta) is 2-dimensional
@@ -89,7 +90,7 @@ class RiskMetrics(object):
         self.alpha_betas_kalman = state_means_r
 
     def build_batch_lstsq_estimates(self, asset_returns, benchmark_returns):
-        if not len(asset_returns) == len(benchmark_returns):
+        if len(asset_returns) != len(benchmark_returns):
             raise '*WTF*'
 
         # Run Kalman filter on returns data
@@ -99,7 +100,7 @@ class RiskMetrics(object):
             # don't wanna do a line fit for less than 3 points, really
             if enum_i < 2:
                 continue
-                        
+
             lookback = min(self.lookback, enum_i)
             # print '==> ', enum_i, len(asset_returns), len(beta)
             beta[enum_i], alpha[enum_i] = np.polyfit(benchmark_returns[enum_i - lookback:enum_i + 1],
