@@ -96,13 +96,13 @@ class RiskMetrics(object):
         beta = np.zeros(len(asset_returns))
         alpha = np.zeros(len(asset_returns))
         for enum_i, elem in enumerate(asset_returns):
+            # don't wanna do a line fit for less than 3 points, really
+            if enum_i < 2:
+                continue
+                        
             lookback = min(self.lookback, enum_i)
             # print '==> ', enum_i, len(asset_returns), len(beta)
             beta[enum_i], alpha[enum_i] = np.polyfit(benchmark_returns[enum_i - lookback:enum_i + 1],
                                                      asset_returns[enum_i - lookback:enum_i + 1], 1)
-
-        # don't wanna do a line fit for less than 3 points, really
-        beta[0], alpha[0] = 0, 0
-        beta[1], alpha[1] = 0, 0
 
         self.alpha_betas_lstsq = np.array(zip(alpha, beta))
